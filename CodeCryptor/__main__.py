@@ -41,8 +41,8 @@ def decrypt(file_in, file_out,key_file) -> None:
     box = nacl.secret.SecretBox(key)
     file_out.write(box.decrypt(file_in.read()))
 
+def main(args=None):
 
-if __name__ == "__main__":
     #TODO: Add encrypt with Key
     parser = argparse.ArgumentParser()
     parser.add_argument("--decrypt", help="La acción del CodeCryptor",
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     out_file = path.abspath(out_file)
 
     if not path.isfile(input_file):
-        print("El Archivo de entrada es invalido")
+        print("El Archivo de entrada no existe o es invalido")
         sys.exit(1)
     if path.exists(out_file):
         print("El Archivo de salida ya existe")
@@ -144,3 +144,6 @@ if __name__ == "__main__":
     if(verbose):
         time_end = time()
         print("Operación finalizada en {} segundos".format(time_end-time_start))
+
+if __name__ == "__main__":
+    main()
