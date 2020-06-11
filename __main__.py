@@ -22,12 +22,15 @@ def checkfile(filename):
         return False
 
 
-def encrypt(file_in, password, file_out, key_file) -> None:
-    password = password.encode('utf-8')
-    kdf = nacl.pwhash.argon2i.kdf
-    salt = nacl.utils.random(nacl.pwhash.argon2i.SALTBYTES)
-    key = kdf(nacl.secret.SecretBox.KEY_SIZE, password, salt)
-    key_file.write(key)
+def encrypt(file_in, password, file_out, key_file,use_key=False) -> None:
+    if not use_key:
+        password = password.encode('utf-8')
+        kdf = nacl.pwhash.argon2i.kdf
+        salt = nacl.utils.random(nacl.pwhash.argon2i.SALTBYTES)
+        key = kdf(nacl.secret.SecretBox.KEY_SIZE, password, salt)
+        key_file.write(key)
+    else:
+        key = key_file.read()
     box = nacl.secret.SecretBox(key)
     encrypted = box.encrypt(file_in.read())
     file_out.write(encrypted)
@@ -40,6 +43,7 @@ def decrypt(file_in, file_out,key_file) -> None:
 
 
 if __name__ == "__main__":
+    #TODO: Add encrypt with Key
     parser = argparse.ArgumentParser()
     parser.add_argument("--decrypt", help="La acción del CodeCryptor",
                         action="store_true", default=False)
@@ -64,11 +68,14 @@ if __name__ == "__main__":
     out_file = args.output
     password = args.password
     key_file = args.key
+    use_key = False
 
     assert (_decrypt or _encrypt
             ), "No se selecciono la acción --decrypt o --encrypt!"
     assert not(_decrypt and _encrypt
                ), "No se puede seleccionar --decrypt y --encrypt al mismo tiempo!"
+    assert not(password and key_file
+               ), "No se puede seleccionar --pasword y --key al mismo tiempo!"
 
     assert input_file is not None, "No se selecciono un archivo de entrada"
 
@@ -77,8 +84,14 @@ if __name__ == "__main__":
         if password is None:
             print("No se escogió una contraseña para encryptar")
             sys.exit(1)
-        if key_file is None:
+        if key_file is None and password is not None:
+            print("Usando contraseña para encriptar...")
             key_file = "key.key"
+        elif key_file is not None and password is None:
+            print("Usando llave para encriptar")
+            password=None
+            use_key = True
+            key_file = path.abspath(key_file)
         else:
             key_file = path.abspath(key_file)
             if path.exists(key_file):
@@ -111,7 +124,7 @@ if __name__ == "__main__":
     try:
         with open(input_file, 'rb') as in_file, open(out_file, 'wb') as o_file, open(key_file, 'wb' if _encrypt else 'rb') as keyf:
             if(_encrypt):
-                encrypt(in_file, password, o_file, keyf)
+                encrypt(in_file, password, o_file, keyf,use_key)
                 print(
                     "NO OLVIDES GUARDAR EL ARCHIVO {} PARA LUEGO DECRYPTAR EL ARCHIVO".format(key_file))
             elif(_decrypt):
